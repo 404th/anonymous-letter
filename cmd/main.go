@@ -1,11 +1,9 @@
 package main
 
 import (
-	"log"
-
+	"github.com/404th/anonymous-letter/cmd/bot"
 	"github.com/404th/anonymous-letter/config"
 	"github.com/gin-gonic/gin"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,30 +24,8 @@ func main() {
 	}
 
 	// 2: connecting to telegram bot
-	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bot.Debug = true
-
-	log.Printf("Authorized on account %s\n", bot.Self.UserName)
-	log.Printf("Authorized on Firstname account %s\n", &bot.Self.FirstName)
-	log.Printf("Authorized on Lastname account %s\n", &bot.Self.LastName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
-		}
+	if err := bot.NewBot(cfg, lg); err != nil {
+		lg.Panic(err)
+		return
 	}
 }
