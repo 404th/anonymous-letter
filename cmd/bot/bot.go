@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 
+	"github.com/404th/anonymous-letter/cmd/bot/steps"
 	"github.com/404th/anonymous-letter/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
@@ -25,14 +26,42 @@ func NewBot(cfg config.Config, lg *logrus.Logger) error {
 	updates := bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message != nil { // If we got a message
-			lg.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-			str := fmt.Sprintf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+		if update.Message != nil {
+			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, str)
-			msg.ReplyToMessageID = update.Message.MessageID
+			switch update.Message.Command() {
+			case "start":
+				fmt.Println(">>> 4")
+				msg.ReplyMarkup = steps.StartKeyboard
+			default:
+				fmt.Println(">>> 5")
+				msg.Text = "I don't know that command"
+			}
 
-			bot.Send(msg)
+			// switch update.Message.Text {
+			// case "List of groups 🟰":
+			// 	fmt.Println(">>> 1")
+			// 	msg.ReplyMarkup = steps.ListOfGroupsKeyboard
+			// default:
+			// 	fmt.Println(">>> 2")
+			// 	msg.Text = "I don't know that text command"
+			// }
+
+			fmt.Println(">>> 3")
+			// Send the message.
+			if _, err = bot.Send(msg); err != nil {
+				panic(err)
+			}
+		} else if update.CallbackQuery != nil {
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+			if _, err := bot.Request(callback); err != nil {
+				panic(err)
+			}
+
+			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Data)
+			if _, err := bot.Send(msg); err != nil {
+				panic(err)
+			}
 		}
 	}
 
